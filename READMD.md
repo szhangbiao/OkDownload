@@ -8,3 +8,19 @@
 - groovy切换到kts，并添加了Catalogs的支持
 
 后续改动会在issue里提问并做相应的回复
+
+### Maven 上传
+
+阿里云效`maven`上传支持：
+
+- 在`buildSrc/main/kotlin/Config.kt`里替换你的releaseUrl和snapshotUrl
+- 在`local.properties`里替换你的mavenUsername和mavenPassword
+
+类似以下这种：
+
+```
+USER_NAME=XXX
+PASS_WORD=XXX
+```
+
+然后在`gradle`面板的相应模块下找到`publishReleasePublicationToMavenRepository`这个Task，双击即可
