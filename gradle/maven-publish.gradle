@@ -1,81 +1,77 @@
 apply plugin: 'maven-publish'
-tasks.withType(PublishToMavenRepository).configureEach { task ->
-    // 第一个参数是match渠道，第二个是match类型（MavenRepository、MavenLocal）
-    def match = task.name =~ '^publish(.*)(Release|Debug|System|Mtk)PublicationTo(.*)$'
-    if (match) {
+
+tasks.withType(PublishToMavenRepository).tap {
+    configureEach { task ->
+        // 第一个参数是match渠道，第二个是match类型（MavenRepository、MavenLocal）
+        def match = task.name =~ '^publish(.*)(Release|Debug)PublicationTo(.*)$'
         // println("task matched: " + "assemble${match[0][1]}")
-        dependsOn("assemble${match[0][1].toString()}")
+        dependsOn("assemble${match[0][1]}")
     }
 }
 
 afterEvaluate {
-    if (project.plugins.hasPlugin("com.android.library")) {
-        def androidExtension = project.extensions.findByName("android")
-        if (androidExtension != null && androidExtension.hasProperty("libraryVariants")) {
-            androidExtension.libraryVariants.all { variant ->
-                publishing {
-                    def name = project.name
-                    def mavenPublish = Config.MODULES_MAVEN_CONFIG.get(name)
-                    if (mavenPublish != null) {
-                        def versionName = mavenPublish.version
-                        // example: com.yunqinglai.market:utils:0.0.1-SNAPSHOT
-                        def buildType = variant.buildType.name
-                        publications {
-                            create(buildType, MavenPublication) {
-                                groupId = mavenPublish.groupId
-                                artifactId = mavenPublish.artifactId
-                                version = mavenPublish.version
-                                artifact "build/outputs/aar/${name}-${buildType}.aar"
-                                pom.withXml {
-                                    def dependenciesNode = asNode().appendNode('dependencies')
-                                    def scopes = [configurations.implementation]
-                                    if (configurations.hasProperty("api")) {
-                                        scopes.add(configurations.api)
+    publishing {
+        def name = project.name
+        def mavenPublish = Config.MODULES_MAVEN_CONFIG.get(name)
+        if (mavenPublish != null) {
+            def versionName = mavenPublish.version
+            publications {
+                release(MavenPublication) {
+                    groupId = mavenPublish.groupId
+                    artifactId = mavenPublish.artifactId
+                    version = mavenPublish.version
+                    def buildType = versionName.endsWith('SNAPSHOT') ? 'debug' : 'release'
+                    artifact "build/outputs/aar/${name}-${buildType}.aar"
+                    // artifact sourcesJar
+                    // 依赖渠道方式
+                    // from project.components.named(componentName)
+                    pom.withXml {
+                        def dependenciesNode = asNode().appendNode('dependencies')
+                        def scopes = [configurations.implementation]
+                        if (configurations.hasProperty("api")) {
+                            scopes.add(configurations.api)
+                        }
+                        if (configurations.hasProperty("implementation")) {
+                            scopes.add(configurations.implementation)
+                        }
+                        if (configurations.hasProperty("debugImplementation")) {
+                            scopes.add(configurations.debugImplementation)
+                        }
+                        if (configurations.hasProperty("releaseImplementation")) {
+                            scopes.add(configurations.releaseImplementation)
+                        }
+                        scopes.each { scope ->
+                            scope.allDependencies.each {
+                                if (it instanceof ModuleDependency) {
+                                    boolean isTransitive = ((ModuleDependency) it).transitive
+                                    if (!isTransitive) {
+                                        return
                                     }
-                                    if (configurations.hasProperty("implementation")) {
-                                        scopes.add(configurations.implementation)
-                                    }
-                                    if (configurations.hasProperty("debugImplementation")) {
-                                        scopes.add(configurations.debugImplementation)
-                                    }
-                                    if (configurations.hasProperty("releaseImplementation")) {
-                                        scopes.add(configurations.releaseImplementation)
-                                    }
-                                    scopes.each { scope ->
-                                        scope.allDependencies.each {
-                                            if (it instanceof ModuleDependency) {
-                                                boolean isTransitive = ((ModuleDependency) it).transitive
-                                                if (!isTransitive) {
-                                                    return
-                                                }
-                                            }
-                                            if (it.group == "${project.rootProject.name}.libs" || it.version == 'unspecified') {
-                                                return
-                                            }
-                                            if (it.group && it.name && it.version) {
-                                                def dependencyNode = dependenciesNode.appendNode('dependency')
-                                                dependencyNode.appendNode('groupId', it.group)
-                                                dependencyNode.appendNode('artifactId', it.name)
-                                                dependencyNode.appendNode('version', it.version)
-                                                dependencyNode.appendNode('scope', scope.name)
-                                            }
-                                        }
-                                    }
+                                }
+                                if (it.group == "${project.rootProject.name}.libs" || it.version == 'unspecified') {
+                                    return
+                                }
+                                if (it.group && it.name && it.version) {
+                                    def dependencyNode = dependenciesNode.appendNode('dependency')
+                                    dependencyNode.appendNode('groupId', it.group)
+                                    dependencyNode.appendNode('artifactId', it.name)
+                                    dependencyNode.appendNode('version', it.version)
+                                    dependencyNode.appendNode('scope', scope.name)
                                 }
                             }
                         }
-                        repositories { RepositoryHandler handler ->
-                            maven {
-                                allowInsecureProtocol = true
-                                url = versionName.endsWith('SNAPSHOT') ? Config.MAVEN.snapshotUrl : Config.MAVEN.releaseUrl
-                                println("maven-publish username: " + Config.MAVEN.credentials.username)
-                                println("maven-publish password: " + Config.MAVEN.credentials.password)
-                                credentials {
-                                    username = Config.MAVEN.credentials.username
-                                    password = Config.MAVEN.credentials.password
-                                }
-                            }
-                        }
+                    }
+                }
+            }
+            repositories { RepositoryHandler handler ->
+                maven {
+                    allowInsecureProtocol = true
+                    url = versionName.endsWith('SNAPSHOT') ? Config.MAVEN.snapshotUrl : Config.MAVEN.releaseUrl
+                    println("maven-publish username: " + Config.MAVEN.credentials.username)
+                    println("maven-publish password: " + Config.MAVEN.credentials.password)
+                    credentials {
+                        username = Config.MAVEN.credentials.username
+                        password = Config.MAVEN.credentials.password
                     }
                 }
             }
