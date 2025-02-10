@@ -1,5 +1,6 @@
 package com.liulishuo.okdownload.core.breakpoint;
 
+import android.database.sqlite.SQLiteFullException;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
@@ -103,9 +104,13 @@ public class RemitSyncExecutor implements Handler.Callback {
         switch (msg.what) {
             case WHAT_REMOVE_INFO:
                 id = msg.arg1;
-                freeToDBIdList.remove(id);
-                this.agent.removeInfo(id);
-                Util.d(TAG, "remove info " + id);
+                try {
+                    freeToDBIdList.remove(id);
+                    this.agent.removeInfo(id);
+                    Util.d(TAG, "remove info " + id);
+                } catch (SQLiteFullException e) {
+                    Util.w(TAG, "remove id to db failed, id = " + id);
+                }
                 break;
             case WHAT_REMOVE_FREE_BUNCH_ID:
                 // remove bunch free-ids
@@ -126,7 +131,7 @@ public class RemitSyncExecutor implements Handler.Callback {
                     this.agent.syncCacheToDB(idList);
                     freeToDBIdList.addAll(idList);
                     Util.d(TAG, "sync bunch info with ids: " + idList);
-                } catch (IOException e) {
+                } catch (IOException | SQLiteFullException e) {
                     Util.w(TAG, "sync info to db failed for ids: " + idList);
                 }
                 break;
@@ -137,7 +142,7 @@ public class RemitSyncExecutor implements Handler.Callback {
                     this.agent.syncCacheToDB(id);
                     freeToDBIdList.add(id);
                     Util.d(TAG, "sync info with id: " + id);
-                } catch (IOException e) {
+                } catch (IOException | SQLiteFullException e) {
                     Util.w(TAG, "sync cache to db failed for id: " + id);
                 }
                 break;
