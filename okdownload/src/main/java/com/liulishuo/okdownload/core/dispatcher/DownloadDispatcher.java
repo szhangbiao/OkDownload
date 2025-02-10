@@ -42,7 +42,7 @@ public class DownloadDispatcher {
     private final AtomicInteger flyingCanceledAsyncCallCount = new AtomicInteger();
     // for avoiding processCalls when doing enqueue/cancel operation
     private final AtomicInteger skipProceedCallCount = new AtomicInteger();
-    int maxParallelRunningCount = 5;
+    int maxParallelRunningCount = 1;
     private @Nullable
     volatile ExecutorService executorService;
     private DownloadStore store;
