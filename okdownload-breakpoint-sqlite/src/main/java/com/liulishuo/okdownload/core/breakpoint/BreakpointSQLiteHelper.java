@@ -7,10 +7,14 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Build;
+import android.os.Environment;
 import android.util.SparseArray;
 
 import com.liulishuo.okdownload.core.exception.SQLiteException;
+import com.liulishuo.okdownload.core.utils.ExternalStorageUtils;
+import com.liulishuo.okdownload.core.utils.StorageStateChecker;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,9 +45,18 @@ public class BreakpointSQLiteHelper extends SQLiteOpenHelper {
     private static final String RESPONSE_FILENAME_TABLE_NAME = "okdownloadResponseFilename";
     private static final String BREAKPOINT_TABLE_NAME = "breakpoint";
     private static final String BLOCK_TABLE_NAME = "block";
+    private final boolean isUseExternalStorage;
+    private final String mDatabasePath;
 
     public BreakpointSQLiteHelper(Context context) {
         super(context, NAME, null, VERSION);
+        this.isUseExternalStorage = StorageStateChecker.isInternalStorageAvailable(context) && Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
+        // 确保目录存在
+        File dbDir = ExternalStorageUtils.getDatabasePath(context);
+        if (!dbDir.exists()) {
+            dbDir.mkdirs();
+        }
+        this.mDatabasePath = new File(dbDir, NAME).getAbsolutePath();
     }
 
     private static ContentValues toValues(@NonNull BreakpointInfo info) {
@@ -77,6 +90,22 @@ public class BreakpointSQLiteHelper extends SQLiteOpenHelper {
         } else {
             db.enableWriteAheadLogging();
         }
+    }
+
+    @Override
+    public SQLiteDatabase getReadableDatabase() {
+        if (isUseExternalStorage) {
+            return SQLiteDatabase.openDatabase(mDatabasePath, null, SQLiteDatabase.OPEN_READONLY);
+        }
+        return super.getReadableDatabase();
+    }
+
+    @Override
+    public SQLiteDatabase getWritableDatabase() {
+        if (isUseExternalStorage) {
+            return SQLiteDatabase.openDatabase(mDatabasePath, null, SQLiteDatabase.OPEN_READWRITE | SQLiteDatabase.CREATE_IF_NECESSARY);
+        }
+        return super.getWritableDatabase();
     }
 
     @Override
