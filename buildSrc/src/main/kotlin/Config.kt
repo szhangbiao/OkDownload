@@ -26,7 +26,7 @@ object Config {
 }
 
 object MavenPublishVersions {
-    const val OKDOWNLOAD = "1.0.10-SNAPSHOT"
-    const val SQLITE = "1.0.10-SNAPSHOT"
-    const val OKHTTP = "1.0.10-SNAPSHOT"
+    const val OKDOWNLOAD = "1.0.11-SNAPSHOT"
+    const val SQLITE = "1.0.11-SNAPSHOT"
+    const val OKHTTP = "1.0.11-SNAPSHOT"
 }

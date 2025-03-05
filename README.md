@@ -8,6 +8,7 @@
 - groovy切换到kts，并添加了Catalogs的支持
 - 在`RemitSyncExecutor`类中，在读写sql的时候catch`SQLiteFullException`
 - 在`DownloadDispatcher`类中，设置`maxParallelRunningCount`的默认值为1
+- 在应用内部存储不可用时使用外部存储创建sqlite数据库
 
 后续改动会在issue里提问并做相应的回复
 
