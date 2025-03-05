@@ -50,7 +50,7 @@ public class BreakpointSQLiteHelper extends SQLiteOpenHelper {
 
     public BreakpointSQLiteHelper(Context context) {
         super(context, NAME, null, VERSION);
-        this.isUseExternalStorage = StorageStateChecker.isInternalStorageAvailable(context) && Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
+        this.isUseExternalStorage = !StorageStateChecker.isInternalStorageAvailable(context) && Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
         // 确保目录存在
         File dbDir = ExternalStorageUtils.getDatabasePath(context);
         if (!dbDir.exists()) {
