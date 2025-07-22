@@ -5,6 +5,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteFullException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Build;
 import android.os.Environment;
@@ -68,7 +69,6 @@ public class BreakpointSQLiteHelper extends SQLiteOpenHelper {
         values.put(FILENAME, info.getFilename());
         values.put(TASK_ONLY_PARENT_PATH, info.isTaskOnlyProvidedParentPath() ? 1 : 0);
         values.put(CHUNKED, info.isChunked() ? 1 : 0);
-
         return values;
     }
 
@@ -131,14 +131,13 @@ public class BreakpointSQLiteHelper extends SQLiteOpenHelper {
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
     }
 
-    public void markFileDirty(int id) {
-        final SQLiteDatabase db = getWritableDatabase();
+    public void markFileDirty(int id) throws SQLiteFullException {
         ContentValues values = new ContentValues(1);
         values.put(ID, id);
-        db.insert(TASK_FILE_DIRTY_TABLE_NAME, null, values);
+        getWritableDatabase().insert(TASK_FILE_DIRTY_TABLE_NAME, null, values);
     }
 
-    public void markFileClear(int id) {
+    public void markFileClear(int id) throws SQLiteFullException {
         //getWritableDatabase().delete(TASK_FILE_DIRTY_TABLE_NAME, ID + " = ?", new String[]{Integer.toString(id)});
         String sql = "DELETE FROM " + TASK_FILE_DIRTY_TABLE_NAME + " WHERE " + ID + " = ?";
         getWritableDatabase().execSQL(sql, new Object[]{id});
@@ -200,10 +199,9 @@ public class BreakpointSQLiteHelper extends SQLiteOpenHelper {
 
     public HashMap<String, String> loadResponseFilenameToMap() {
         Cursor cursor = null;
-        final SQLiteDatabase db = getWritableDatabase();
         final HashMap<String, String> urlFilenameMap = new HashMap<>();
         try {
-            cursor = db.rawQuery(Select.ALL_FROM_RESPONSE_FILENAME, null);
+            cursor = getWritableDatabase().rawQuery(Select.ALL_FROM_RESPONSE_FILENAME, null);
             while (cursor.moveToNext()) {
                 final String url = cursor.getString(cursor.getColumnIndex(URL));
                 final String filename = cursor.getString(cursor.getColumnIndex(FILENAME));
@@ -252,7 +250,6 @@ public class BreakpointSQLiteHelper extends SQLiteOpenHelper {
         }
         final long result = db.insert(BREAKPOINT_TABLE_NAME, null, toValues(info));
         if (result == -1) throw new SQLiteException("insert info " + info + " failed!");
-
     }
 
     public void updateBlockIncrease(@NonNull BreakpointInfo info, int blockIndex, long newCurrentOffset) {
@@ -278,14 +275,14 @@ public class BreakpointSQLiteHelper extends SQLiteOpenHelper {
         }
     }
 
-    public void removeInfo(int id) {
+    public void removeInfo(int id) throws SQLiteFullException {
         //getWritableDatabase().delete(BREAKPOINT_TABLE_NAME, ID + " = ?", new String[]{String.valueOf(id)});
         String sql = "DELETE FROM " + BREAKPOINT_TABLE_NAME + " WHERE " + ID + " = ?";
         getWritableDatabase().execSQL(sql, new Object[]{id});
         removeBlock(id);
     }
 
-    public void removeBlock(int breakpointId) {
+    public void removeBlock(int breakpointId) throws SQLiteFullException {
         //getWritableDatabase().delete(BLOCK_TABLE_NAME, HOST_ID + " = ?", new String[]{String.valueOf(breakpointId)});
         String sql = "DELETE FROM " + BLOCK_TABLE_NAME + " WHERE " + HOST_ID + " = ?";
         getWritableDatabase().execSQL(sql, new Object[]{breakpointId});

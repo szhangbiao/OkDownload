@@ -1,6 +1,8 @@
 package com.liulishuo.okdownload.core.connection;
 
 
+import android.os.Build;
+
 import androidx.annotation.NonNull;
 
 import com.liulishuo.okdownload.RedirectUtil;
@@ -10,6 +12,7 @@ import java.io.InputStream;
 import java.net.ProtocolException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -123,7 +126,14 @@ public class DownloadOkHttp3Connection implements DownloadConnection, DownloadCo
 
         @NonNull
         public OkHttpClient.Builder builder() {
-            if (clientBuilder == null) clientBuilder = new OkHttpClient.Builder();
+            if (clientBuilder == null) {
+                clientBuilder = new OkHttpClient.Builder();
+                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP_MR1) {
+                    clientBuilder.connectTimeout(30, TimeUnit.SECONDS);
+                    clientBuilder.writeTimeout(30, TimeUnit.SECONDS);
+                    clientBuilder.readTimeout(30, TimeUnit.SECONDS);
+                }
+            }
             return clientBuilder;
         }
 

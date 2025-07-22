@@ -1,6 +1,7 @@
 package com.liulishuo.okdownload.core.breakpoint;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteFullException;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -69,7 +70,11 @@ public class BreakpointStoreOnSQLite implements DownloadStore {
     public void onTaskEnd(int id, @NonNull EndCause cause, @Nullable Exception exception) {
         onCache.onTaskEnd(id, cause, exception);
         if (cause == EndCause.COMPLETED) {
-            helper.removeInfo(id);
+            try {
+                helper.removeInfo(id);
+            } finally {
+                // do nothing
+            }
         }
     }
 
@@ -82,7 +87,11 @@ public class BreakpointStoreOnSQLite implements DownloadStore {
     @Override
     public boolean markFileDirty(int id) {
         if (onCache.markFileDirty(id)) {
-            helper.markFileDirty(id);
+            try {
+                helper.markFileDirty(id);
+            } catch (SQLiteFullException e) {
+                return false;
+            }
             return true;
         }
         return false;
@@ -91,7 +100,11 @@ public class BreakpointStoreOnSQLite implements DownloadStore {
     @Override
     public boolean markFileClear(int id) {
         if (onCache.markFileClear(id)) {
-            helper.markFileClear(id);
+            try {
+                helper.markFileClear(id);
+            } catch (SQLiteFullException e) {
+                return false;
+            }
             return true;
         }
         return false;
@@ -99,8 +112,11 @@ public class BreakpointStoreOnSQLite implements DownloadStore {
 
     @Override
     public void remove(int id) {
-        onCache.remove(id);
-        helper.removeInfo(id);
+        try {
+            helper.removeInfo(id);
+        } finally {
+            onCache.remove(id);
+        }
     }
 
     @Override

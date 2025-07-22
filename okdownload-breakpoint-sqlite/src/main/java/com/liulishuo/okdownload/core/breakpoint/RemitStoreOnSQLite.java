@@ -1,6 +1,7 @@
 package com.liulishuo.okdownload.core.breakpoint;
 
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteFullException;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -169,7 +170,7 @@ public class RemitStoreOnSQLite implements RemitSyncExecutor.RemitAgent, Downloa
     }
 
     @Override
-    public void removeInfo(int id) {
+    public void removeInfo(int id) throws SQLiteFullException {
         sqLiteHelper.removeInfo(id);
     }
 }
